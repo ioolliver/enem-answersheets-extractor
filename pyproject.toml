@@ -1,0 +1,11 @@
+[project]
+name = "enem-answersheet-extractor"
+version = "0.1.0"
+description = "Extract ENEM answer keys from PDF files into JSON."
+requires-python = ">=3.10"
+
+[project.scripts]
+enem-extract = "enem_answersheet_extractor.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
