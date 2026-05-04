@@ -43,6 +43,7 @@ That folder output format is:
   {
     "year": 2024,
     "day": 1,
+    "application": "normal",
     "sheet": [
       {
         "index": 1,
@@ -55,6 +56,14 @@ That folder output format is:
     ]
   }
 ]
+```
+
+Application is inferred from the filename suffix. Files named like `2024_dia_1_ppl.pdf`, `2024_dia_1_digital.pdf`, or `2024_dia_1_terceira.pdf` output `application` as `ppl`, `digital`, or `terceira`. Files without an application suffix output `normal`.
+
+To extract only one application type from a folder:
+
+```bash
+python3 extract_answers.py pdfs --application-only ppl --pretty
 ```
 
 When an ENEM row contains both English and Spanish alternatives, the output includes both in `answer.english` and `answer.spanish`. Rows with a single alternative use a numeric `answer` directly.
@@ -71,4 +80,4 @@ Run the test suite:
 python3 -m unittest discover -s tests
 ```
 
-The suite includes parser tests and a PDF compatibility matrix for every PDF fixture currently in `pdfs/`: day-1 answer keys from 2011 through 2024, plus a 2024 day-2 PDF with a canceled question.
+The suite includes parser tests and a PDF compatibility matrix for selected known PDF fixtures.

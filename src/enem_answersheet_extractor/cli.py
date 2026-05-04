@@ -9,8 +9,9 @@ from pathlib import Path
 
 
 LETTER_TO_INDEX = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
+APPLICATIONS = ("normal", "ppl", "digital", "terceira")
 PDF_FILENAME_RE = re.compile(
-    r"^(?P<year>\d{4})_dia_(?P<day>\d+)\.pdf$",
+    r"^(?P<year>\d{4})_dia_(?P<day>\d+)(?:_(?P<application>ppl|digital|terceira))?\.pdf$",
     re.IGNORECASE,
 )
 
@@ -46,7 +47,10 @@ def parse_answers(text: str) -> list[dict]:
     ]
 
 
-def extract_answer_sheets_from_folder(pdfs_dir: Path) -> list[dict]:
+def extract_answer_sheets_from_folder(
+    pdfs_dir: Path,
+    application_only: str | None = None,
+) -> list[dict]:
     if not pdfs_dir.exists():
         raise FileNotFoundError(f"Folder not found: {pdfs_dir}")
 
@@ -55,11 +59,15 @@ def extract_answer_sheets_from_folder(pdfs_dir: Path) -> list[dict]:
 
     payload = []
     for pdf_path in sorted(pdfs_dir.glob("*.pdf"), key=_pdf_sort_key):
-        year, day = _parse_pdf_filename(pdf_path)
+        year, day, application = _parse_pdf_filename(pdf_path)
+        if application_only is not None and application != application_only:
+            continue
+
         payload.append(
             {
                 "year": year,
                 "day": day,
+                "application": application,
                 "sheet": parse_answers(extract_text_from_pdf(pdf_path)),
             }
         )
@@ -67,17 +75,19 @@ def extract_answer_sheets_from_folder(pdfs_dir: Path) -> list[dict]:
     return payload
 
 
-def _parse_pdf_filename(pdf_path: Path) -> tuple[int, int]:
+def _parse_pdf_filename(pdf_path: Path) -> tuple[int, int, str]:
     match = PDF_FILENAME_RE.match(pdf_path.name)
     if match is None:
         raise ValueError(
-            f"PDF filename must follow YEAR_dia_DAY.pdf: {pdf_path.name}"
+            "PDF filename must follow YEAR_dia_DAY[_APPLICATION].pdf "
+            f"where APPLICATION is ppl, digital, or terceira: {pdf_path.name}"
         )
 
-    return int(match["year"]), int(match["day"])
+    application = (match["application"] or "normal").lower()
+    return int(match["year"]), int(match["day"]), application
 
 
-def _pdf_sort_key(pdf_path: Path) -> tuple[int, int]:
+def _pdf_sort_key(pdf_path: Path) -> tuple[int, int, str]:
     return _parse_pdf_filename(pdf_path)
 
 
@@ -144,6 +154,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Pretty-print JSON with indentation.",
     )
+    parser.add_argument(
+        "--application-only",
+        choices=APPLICATIONS,
+        help="When source is a folder, extract only this application type.",
+    )
     return parser
 
 
@@ -153,7 +168,10 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.source.is_dir():
-            payload_data = extract_answer_sheets_from_folder(args.source)
+            payload_data = extract_answer_sheets_from_folder(
+                args.source,
+                application_only=args.application_only,
+            )
         else:
             payload_data = parse_answers(extract_text_from_pdf(args.source))
     except Exception as error:

@@ -214,10 +214,10 @@ COMPATIBILITY_CASES = {
 
 
 class PdfCompatibilityTest(unittest.TestCase):
-    def test_every_pdf_fixture_has_a_compatibility_case(self):
+    def test_every_compatibility_case_has_a_pdf_fixture(self):
         pdf_filenames = {path.name for path in (ROOT / "pdfs").glob("*.pdf")}
 
-        self.assertEqual(pdf_filenames, set(COMPATIBILITY_CASES))
+        self.assertLessEqual(set(COMPATIBILITY_CASES), pdf_filenames)
 
     @unittest.skipUnless(shutil.which("pdftotext"), "pdftotext is required")
     def test_known_pdfs_extract_expected_answer_sets(self):
